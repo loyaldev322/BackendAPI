@@ -2,100 +2,116 @@ const axios = require('axios');
 
 // Helper function to extract file ID from Google Drive URL
 function extractFileId(url) {
-  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  return match ? match[1] : null;
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
 }
 
 // Helper function to convert Google Drive sharing link to direct download link
 function getDirectDownloadLink(fileId) {
-  return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    // Add confirm=t to bypass virus scan warning for executable files
+    return `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
 }
 
 // Netlify serverless function
 exports.handler = async (event, context) => {
-  // Enable CORS for all origins
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Content-Type': 'application/json'
-  };
-
-  // Handle preflight requests
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
+    // Enable CORS for all origins
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Content-Type': 'application/json'
     };
-  }
 
-  // Only allow GET requests
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({
-        data: '',
-        error: 'Method not allowed'
-      })
-    };
-  }
-
-  try {
-    // Get query parameters
-    const queryParams = event.queryStringParameters || {};
-    
-    // Google Drive link - you can also make this configurable via query parameter
-    const googleDriveLink = queryParams.url || 'https://drive.google.com/file/d/16AaeeVhqj4Q6FlJIDMgdWASJvq7w00Yc/view?usp=sharing';
-    
-    // Extract file ID from the Google Drive URL
-    const fileId = extractFileId(googleDriveLink);
-    
-    if (!fileId) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          data: '',
-          error: 'Invalid Google Drive URL'
-        })
-      };
+    // Handle preflight requests
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers,
+            body: ''
+        };
     }
 
-    // Convert to direct download link
-    const downloadLink = getDirectDownloadLink(fileId);
-    
-    // Fetch the content from Google Drive
-    const response = await axios.get(downloadLink, {
-      maxRedirects: 5,
-      validateStatus: function (status) {
-        return status >= 200 && status < 400; // Accept redirects
-      }
-    });
+    // Only allow GET requests
+    if (event.httpMethod !== 'GET') {
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({
+                data: '',
+                error: 'Method not allowed'
+            })
+        };
+    }
 
-    // Get the content as text
-    const content = response.data;
+    try {
+        // Get query parameters
+        const queryParams = event.queryStringParameters || {};
 
-    // Return in the specified format
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        data: content
-      })
-    };
+        // Google Drive link - you can also make this configurable via query parameter
+        const googleDriveLink = queryParams.url || 'https://drive.google.com/file/d/16AaeeVhqj4Q6FlJIDMgdWASJvq7w00Yc/view?usp=sharing';
 
-  } catch (error) {
-    console.error('Error fetching from Google Drive:', error.message);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        data: '',
-        error: 'Failed to fetch data from Google Drive'
-      })
-    };
-  }
+        // Extract file ID from the Google Drive URL
+        const fileId = extractFileId(googleDriveLink);
+
+        if (!fileId) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    data: '',
+                    error: 'Invalid Google Drive URL'
+                })
+            };
+        }
+
+        // Convert to direct download link
+        const downloadLink = getDirectDownloadLink(fileId);
+
+        // Fetch the content from Google Drive
+        const response = await axios.get(downloadLink, {
+            maxRedirects: 5,
+            validateStatus: function (status) {
+                return status >= 200 && status < 400; // Accept redirects
+            },
+            responseType: 'text' // Ensure we get text content
+        });
+
+        // Get the content as text
+        let content = response.data;
+
+        // Check if we got HTML (virus scan warning page) instead of the actual file
+        if (content.trim().startsWith('<!DOCTYPE html>') || content.includes('Google Drive can\'t scan this file')) {
+            // Try alternative download method
+            const altDownloadLink = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+            const altResponse = await axios.get(altDownloadLink, {
+                maxRedirects: 5,
+                validateStatus: function (status) {
+                    return status >= 200 && status < 400;
+                },
+                responseType: 'text'
+            });
+            content = altResponse.data;
+        }
+
+        // Return in the specified format
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                data: content
+            })
+        };
+
+    } catch (error) {
+        console.error('Error fetching from Google Drive:', error.message);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+                data: '',
+                error: 'Failed to fetch data from Google Drive'
+            })
+        };
+    }
 };
 

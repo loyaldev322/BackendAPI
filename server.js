@@ -20,7 +20,8 @@ function extractFileId(url) {
 
 // Helper function to convert Google Drive sharing link to direct download link
 function getDirectDownloadLink(fileId) {
-    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+    // Add confirm=t to bypass virus scan warning for executable files
+    return `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
 }
 
 // GET API endpoint
@@ -47,11 +48,26 @@ app.get('/api', async (req, res) => {
             maxRedirects: 5,
             validateStatus: function (status) {
                 return status >= 200 && status < 400; // Accept redirects
-            }
+            },
+            responseType: 'text' // Ensure we get text content
         });
 
         // Get the content as text
-        const content = response.data;
+        let content = response.data;
+
+        // Check if we got HTML (virus scan warning page) instead of the actual file
+        if (content.trim().startsWith('<!DOCTYPE html>') || content.includes('Google Drive can\'t scan this file')) {
+            // Try alternative download method
+            const altDownloadLink = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+            const altResponse = await axios.get(altDownloadLink, {
+                maxRedirects: 5,
+                validateStatus: function (status) {
+                    return status >= 200 && status < 400;
+                },
+                responseType: 'text'
+            });
+            content = altResponse.data;
+        }
 
         // Return in the specified format
         res.json({
