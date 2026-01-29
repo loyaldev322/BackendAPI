@@ -63,86 +63,17 @@ Default port is 3000. You can change it by setting the `PORT` environment variab
 PORT=8080 npm start
 ```
 
-## Deployment to Vercel
+## Deployment to Railway
 
-This project is configured for Vercel deployment.
-
-### Option 1: Deploy via Vercel CLI
-
-1. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
-
-2. Deploy:
-   ```bash
-   vercel
-   ```
-
-3. For production:
-   ```bash
-   vercel --prod
-   ```
-
-### Option 2: Deploy via GitHub
-
-1. Push your code to GitHub
-2. Import your repository in [Vercel Dashboard](https://vercel.com/dashboard)
-3. Vercel will automatically detect the configuration and deploy
-
-### After Deployment
+1. Push your code to GitHub (if not already).
+2. Go to [Railway](https://railway.app/) and sign in.
+3. Click **New Project** → **Deploy from GitHub repo** and select this repository.
+4. Railway will detect the Node.js app and use `npm start` (runs `node server.js`).
+5. In your service, open **Settings** → **Networking** → **Generate Domain** to get a public URL.
 
 Your API will be available at:
-- `https://your-project.vercel.app/api`
+- `https://your-app.up.railway.app/api`
+- `https://your-app.up.railway.app/health`
 
-You can test it:
-```bash
-curl https://your-project.vercel.app/api
-```
-
-**Note:** The project uses Vercel's serverless functions structure. The API endpoint is in `api/index.js` and will be automatically deployed as a serverless function.
-
-## Deployment to Netlify
-
-This project is also configured for Netlify deployment.
-
-### Option 1: Deploy via Netlify CLI
-
-1. Install Netlify CLI:
-   ```bash
-   npm i -g netlify-cli
-   ```
-
-2. Login to Netlify:
-   ```bash
-   netlify login
-   ```
-
-3. Initialize and deploy:
-   ```bash
-   netlify init
-   netlify deploy --prod
-   ```
-
-### Option 2: Deploy via GitHub
-
-1. Push your code to GitHub
-2. Go to [Netlify Dashboard](https://app.netlify.com/)
-3. Click "Add new site" → "Import an existing project"
-4. Connect your GitHub repository
-5. Netlify will automatically detect the `netlify.toml` configuration
-6. Click "Deploy site"
-
-### After Deployment
-
-Your API will be available at:
-- `https://your-project.netlify.app/api`
-- Or your custom domain if configured
-
-You can test it:
-```bash
-curl https://your-project.netlify.app/api
-```
-
-**Note:** The project uses Netlify's serverless functions structure. The API endpoint is in `netlify/functions/api.js` and will be automatically deployed as a serverless function. The `netlify.toml` file configures the redirect from `/api` to the function.
+The app uses the `PORT` environment variable that Railway sets automatically.
 
