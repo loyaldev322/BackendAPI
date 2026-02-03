@@ -77,3 +77,21 @@ Your API will be available at:
 
 The app uses the `PORT` environment variable that Railway sets automatically.
 
+## Deployment to Vercel
+
+The project includes a Vercel serverless function in `api/index.js` so you can deploy to Vercel.
+
+### Option 1: Vercel CLI
+
+1. Install the CLI: `npm i -g vercel`
+2. From the project root, run: `vercel`
+3. For production: `vercel --prod`
+
+### Option 2: GitHub
+
+1. Push your code to GitHub.
+2. Go to [Vercel Dashboard](https://vercel.com/dashboard) → **Add New** → **Project**.
+3. Import your repository. Vercel will use `vercel.json` and deploy `api/index.js` as a serverless function.
+
+Your API will be at `https://your-project.vercel.app/api`. The `/health` endpoint is only available when running the Express server (e.g. on Railway), not on Vercel.
+
